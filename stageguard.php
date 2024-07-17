@@ -1,6 +1,7 @@
 <?php
 /*
  * Plugin Name: StageGuard
+ * Plugin URI:              https://github.com/MrGKanev/StageGuard/
  * Description: Adds a message to the admin panel indicating this is a staging environment and deactivates specific plugins.
  * Version:                 0.0.1
  * Author:                  Gabriel Kanev
