@@ -23,13 +23,20 @@ StageGuard will deactivate the following plugins:
 7. [RunCloud Hub](https://wordpress.org/plugins/runcloud-hub/)
 8. [Site Kit by Google](https://wordpress.org/plugins/google-site-kit/)
 9. [Super Page Cache for Cloudflare](https://wordpress.org/plugins/wp-cloudflare-page-cache/)
-10. [UPS Labels and Tracking](https://wordpress.org/plugins/ups-woocommerce-shipping/)
+10. [UPS Labels and Tracking](https://octolize.com/product/ups-labels-and-tracking-woocommerce/)
 11. [WooCommerce - ShipStation Integration](https://wordpress.org/plugins/woocommerce-shipstation-integration/)
 12. [WP OPcache](https://wordpress.org/plugins/wp-opcache/)
 13. [Headers Security Advanced & HSTS WP](https://wordpress.org/plugins/headers-security-advanced-hsts-wp/)
 14. [WP-Rocket](https://wp-rocket.me/)
 15. [Tidio Chat](https://wordpress.org/plugins/tidio-live-chat/)
 16. [LiteSpeed Cache](https://wordpress.org/plugins/litespeed-cache/)
+17. [WP Fastest Cache](https://wordpress.org/plugins/wp-fastest-cache/)
+18. [PhastPress](https://wordpress.org/plugins/phastpress/)
+19. [W3 Total Cache](https://wordpress.org/plugins/w3-total-cache/)
+20. [WP Optimize](https://wordpress.org/plugins/wp-optimize/)
+21. [Autoptimize](https://wordpress.org/plugins/autoptimize/)
+22. [NitroPack](https://wordpress.org/plugins/nitropack/)
+
 
 ## Installation
 

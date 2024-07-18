@@ -3,7 +3,7 @@
  * Plugin Name: StageGuard
  * Plugin URI:              https://github.com/MrGKanev/StageGuard/
  * Description: Adds a message to the admin panel indicating this is a staging environment and deactivates specific plugins.
- * Version:                 0.0.1
+ * Version:                 0.0.2
  * Author:                  Gabriel Kanev
  * Author URI:              https://gkanev.com
  * License:                 MIT
@@ -32,7 +32,13 @@ $plugins_to_handle = array(
     'headers-security-advanced-hsts-wp/headers-security-advanced-hsts-wp.php',
     'wp-rocket/wp-rocket.php',
     'tidio-live-chat/tidio-live-chat.php',
-    'litespeed-cache/litespeed-cache.php'
+    'litespeed-cache/litespeed-cache.php',
+    'wp-fastest-cache/wpFastestCache.php', // WP Fastest Cache
+    'phastpress/phastpress.php', // PhastPress
+    'w3-total-cache/w3-total-cache.php', // W3 Total Cache
+    'wp-optimize/wp-optimize.php', // WP Optimize
+    'autoptimize/autoptimize.php', // Autoptimize
+    'nitropack/nitropack.php' // NitroPack
 );
 
 // Add an admin notice indicating this is a staging environment.
@@ -67,7 +73,18 @@ add_action('admin_notices', 'stageguard_activation_notice');
 function prevent_plugin_activation($plugin)
 {
     global $plugins_to_handle;
-    if (in_array($plugin, $plugins_to_handle)) {
+
+    // Debugging output
+    if (!isset($plugins_to_handle)) {
+        error_log("Error: plugins_to_handle is not set.");
+    } elseif (!is_array($plugins_to_handle)) {
+        error_log("Error: plugins_to_handle is not an array.");
+    } else {
+        error_log("Plugin to activate: " . $plugin);
+        error_log("Plugins to handle: " . print_r($plugins_to_handle, true));
+    }
+
+    if (is_array($plugins_to_handle) && in_array($plugin, $plugins_to_handle)) {
         deactivate_plugins($plugin);
         wp_safe_redirect(admin_url('plugins.php?stageguard_activation_error=true'));
         exit;
