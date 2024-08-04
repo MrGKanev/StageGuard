@@ -41,28 +41,28 @@ class StageGuard
     private function load_plugins_to_handle()
     {
         $this->plugins_to_handle = [
-            'bunnycdn/bunnycdn.php',
-            'redis-cache/redis-cache.php',
-            'google-listings-and-ads/google-listings-and-ads.php',
-            'metorik-helper/metorik-helper.php',
-            'order-sync-with-zendesk-for-woocommerce/order-sync-with-zendesk-for-woocommerce.php',
-            'redis-object-cache/redis-object-cache.php',
-            'runcloud-hub/runcloud-hub.php',
-            'site-kit-by-google/site-kit-by-google.php',
-            'super-page-cache-for-cloudflare/super-page-cache-for-cloudflare.php',
+            'bunnycdn/bunnycdn.php', // BunnyCDN
+            'redis-cache/redis-cache.php', // Redis Cache
+            'google-listings-and-ads/google-listings-and-ads.php', // Google Listings and Ads
+            'metorik-helper/metorik-helper.php', // Metorik Helper
+            'order-sync-with-zendesk-for-woocommerce/order-sync-with-zendesk-for-woocommerce.php', // Order Sync with Zendesk for WooCommerce
+            'redis-object-cache/redis-object-cache.php', // Redis Object Cache
+            'runcloud-hub/runcloud-hub.php', // RunCloud Hub
+            'google-site-kit/google-site-kit.php', // Site Kit by Google
+            'super-page-cache-for-cloudflare/super-page-cache-for-cloudflare.php', // WP Cloudflare Page Cache
             'ups-woocommerce-shipping/ups-woocommerce-shipping.php',
-            'woocommerce-shipstation-integration/woocommerce-shipstation.php',
-            'wp-opcache/wp-opcache.php',
-            'headers-security-advanced-hsts-wp/headers-security-advanced-hsts-wp.php',
-            'wp-rocket/wp-rocket.php',
-            'tidio-live-chat/tidio-live-chat.php',
-            'litespeed-cache/litespeed-cache.php',
-            'wp-fastest-cache/wpFastestCache.php',
-            'phastpress/phastpress.php',
-            'w3-total-cache/w3-total-cache.php',
-            'wp-optimize/wp-optimize.php',
-            'autoptimize/autoptimize.php',
-            'nitropack/nitropack.php',
+            'woocommerce-shipstation-integration/woocommerce-shipstation.php', // ShipStation
+            'wp-opcache/wp-opcache.php', // OPcache
+            'headers-security-advanced-hsts-wp/headers-security-advanced-hsts-wp.php', // HSTS
+            'wp-rocket/wp-rocket.php', // WP Rocket
+            'tidio-live-chat/tidio-live-chat.php', // Tidio Chat
+            'litespeed-cache/litespeed-cache.php', // LiteSpeed Cache
+            'wp-fastest-cache/wpFastestCache.php', // WP Fastest Cache
+            'phastpress/phastpress.php', // WP Fastest Cache
+            'w3-total-cache/w3-total-cache.php', // W3 Total Cache
+            'wp-optimize/wp-optimize.php', // WP Optimize
+            'autoptimize/autoptimize.php', // Autoptimize
+            'nitropack/nitropack.php', // Nitropack
             'wp-sync-db/wp-sync-db.php', // WP Sync DB
             'wp-sync-db-media-files/wp-sync-db-media-files.php', // WP Sync DB Media Files
             'updraftplus/updraftplus.php', // UpdraftPlus - Backup/Restore
