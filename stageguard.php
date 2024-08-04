@@ -58,7 +58,7 @@ class StageGuard
             'tidio-live-chat/tidio-live-chat.php', // Tidio Chat
             'litespeed-cache/litespeed-cache.php', // LiteSpeed Cache
             'wp-fastest-cache/wpFastestCache.php', // WP Fastest Cache
-            'phastpress/phastpress.php', // WP Fastest Cache
+            'phastpress/phastpress.php', // PhastPress
             'w3-total-cache/w3-total-cache.php', // W3 Total Cache
             'wp-optimize/wp-optimize.php', // WP Optimize
             'autoptimize/autoptimize.php', // Autoptimize
@@ -66,6 +66,7 @@ class StageGuard
             'wp-sync-db/wp-sync-db.php', // WP Sync DB
             'wp-sync-db-media-files/wp-sync-db-media-files.php', // WP Sync DB Media Files
             'updraftplus/updraftplus.php', // UpdraftPlus - Backup/Restore
+            'mailchimp-for-woocommerce/mailchimp-woocommerce.php', // Mailchimp for WooCommerce
         ];
         $this->plugins_to_handle = array_map('trim', $this->plugins_to_handle);
     }
