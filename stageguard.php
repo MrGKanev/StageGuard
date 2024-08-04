@@ -62,7 +62,10 @@ class StageGuard
             'w3-total-cache/w3-total-cache.php',
             'wp-optimize/wp-optimize.php',
             'autoptimize/autoptimize.php',
-            'nitropack/nitropack.php'
+            'nitropack/nitropack.php',
+            'wp-sync-db/wp-sync-db.php', // WP Sync DB
+            'wp-sync-db-media-files/wp-sync-db-media-files.php', // WP Sync DB Media Files
+            'updraftplus/updraftplus.php', // UpdraftPlus - Backup/Restore
         ];
         $this->plugins_to_handle = array_map('trim', $this->plugins_to_handle);
     }
