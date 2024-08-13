@@ -2,9 +2,9 @@
 /*
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
- * Description: Adds a message to the admin panel indicating this is a staging environment and manages specific plugins.
- * Version: 0.0.3
- * Author: Gabriel Kanev
+ * Description: Manages staging environment, including Coming Soon mode, search engine visibility, staging indicator, debug mode toggle, and robots.txt modification.
+ * Version: 0.0.5
+ * Author: Gabriel Kanev (modified by AI assistant)
  * Author URI: https://gkanev.com
  * License: MIT
  * Requires at least: 6.0
@@ -28,6 +28,12 @@ class StageGuard
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
+        add_action('init', [$this, 'activate_woocommerce_coming_soon']);
+        add_action('init', [$this, 'activate_wordpress_search_engine_visibility']);
+        add_action('wp_head', [$this, 'add_staging_indicator']);
+        add_action('admin_menu', [$this, 'add_debug_mode_menu']);
+        add_action('generate_rewrite_rules', [$this, 'modify_robots_txt']);
+        add_filter('robots_txt', [$this, 'custom_robots_txt'], 10, 2);
     }
 
     public static function get_instance()
@@ -67,6 +73,7 @@ class StageGuard
             'wp-sync-db-media-files/wp-sync-db-media-files.php', // WP Sync DB Media Files
             'updraftplus/updraftplus.php', // UpdraftPlus - Backup/Restore
             'mailchimp-for-woocommerce/mailchimp-woocommerce.php', // Mailchimp for WooCommerce
+            'bunnycdn/bunnycdn.php'
         ];
         $this->plugins_to_handle = array_map('trim', $this->plugins_to_handle);
     }
@@ -99,6 +106,97 @@ class StageGuard
             wp_safe_redirect(add_query_arg('stageguard_activation_error', 'true', admin_url('plugins.php')));
             exit;
         }
+    }
+
+    public function activate_woocommerce_coming_soon()
+    {
+        if (class_exists('WooCommerce')) {
+            update_option('woocommerce_shop_page_display', '');
+            update_option('woocommerce_category_archive_display', '');
+            update_option('woocommerce_default_catalog_orderby', 'menu_order');
+            update_option('woocommerce_placeholder_image', 0);
+            update_option('woocommerce_enable_reviews', 'no');
+            update_option('woocommerce_enable_review_rating', 'no');
+            update_option('woocommerce_enable_ajax_add_to_cart', 'no');
+            
+            // Set store notice
+            update_option('woocommerce_demo_store', 'yes');
+            update_option('woocommerce_demo_store_notice', 'Coming Soon! Our store is currently under construction.');
+        }
+    }
+
+    public function activate_wordpress_search_engine_visibility()
+    {
+        update_option('blog_public', 0);
+    }
+
+    // New method: Add staging indicator
+    public function add_staging_indicator()
+    {
+        echo '<div style="position: fixed; top: 0; left: 0; right: 0; background: #ff6b6b; color: white; text-align: center; padding: 5px; z-index: 9999;">STAGING ENVIRONMENT</div>';
+    }
+
+    // New method: Add debug mode toggle
+    public function add_debug_mode_menu()
+    {
+        add_options_page('Debug Mode', 'Debug Mode', 'manage_options', 'stageguard-debug', [$this, 'debug_mode_page']);
+    }
+
+    public function debug_mode_page()
+    {
+        if (isset($_POST['debug_mode'])) {
+            $debug_mode = $_POST['debug_mode'] === 'on' ? true : false;
+            $this->update_wp_config('WP_DEBUG', $debug_mode);
+        }
+
+        $current_debug_mode = defined('WP_DEBUG') && WP_DEBUG;
+
+        echo '<div class="wrap">';
+        echo '<h1>Debug Mode</h1>';
+        echo '<form method="post">';
+        echo '<label for="debug_mode">Enable Debug Mode: </label>';
+        echo '<input type="checkbox" id="debug_mode" name="debug_mode" ' . ($current_debug_mode ? 'checked' : '') . '>';
+        echo '<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Save Changes"></p>';
+        echo '</form>';
+        echo '</div>';
+    }
+
+    private function update_wp_config($constant, $value)
+    {
+        $config_file = ABSPATH . 'wp-config.php';
+        $config_content = file_get_contents($config_file);
+
+        if ($value === true) {
+            $replacement = "define('$constant', true);";
+        } elseif ($value === false) {
+            $replacement = "define('$constant', false);";
+        } else {
+            $replacement = "define('$constant', '$value');";
+        }
+
+        if (preg_match("/define\s*\(\s*['\"]$constant['\"]\s*,/", $config_content)) {
+            $config_content = preg_replace("/define\s*\(\s*['\"]$constant['\"]\s*,.*?\);/", $replacement, $config_content);
+        } else {
+            $config_content .= PHP_EOL . $replacement;
+        }
+
+        file_put_contents($config_file, $config_content);
+    }
+
+    // New method: Modify robots.txt
+    public function modify_robots_txt($wp_rewrite)
+    {
+        $home_path = get_home_path();
+        $robots_file = $home_path . 'robots.txt';
+
+        $content = "User-agent: *\nDisallow: /\n";
+        file_put_contents($robots_file, $content);
+    }
+
+    public function custom_robots_txt($output, $public)
+    {
+        $output = "User-agent: *\nDisallow: /\n";
+        return $output;
     }
 }
 
