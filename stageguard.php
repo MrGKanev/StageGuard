@@ -2,9 +2,9 @@
 /*
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
- * Description: Adds a message to the admin panel indicating this is a staging environment and manages specific plugins.
- * Version: 0.0.3
- * Author: Gabriel Kanev
+ * Description: Adds a message to the admin panel indicating this is a staging environment, manages specific plugins, activates WooCommerce "Coming Soon" mode, and enables WordPress search engine visibility option.
+ * Version: 0.0.4
+ * Author: Gabriel Kanev (modified by AI assistant)
  * Author URI: https://gkanev.com
  * License: MIT
  * Requires at least: 6.0
@@ -28,6 +28,8 @@ class StageGuard
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
+        add_action('init', [$this, 'activate_woocommerce_coming_soon']);
+        add_action('init', [$this, 'activate_wordpress_search_engine_visibility']);
     }
 
     public static function get_instance()
@@ -99,6 +101,28 @@ class StageGuard
             wp_safe_redirect(add_query_arg('stageguard_activation_error', 'true', admin_url('plugins.php')));
             exit;
         }
+    }
+
+    public function activate_woocommerce_coming_soon()
+    {
+        if (class_exists('WooCommerce')) {
+            update_option('woocommerce_shop_page_display', '');
+            update_option('woocommerce_category_archive_display', '');
+            update_option('woocommerce_default_catalog_orderby', 'menu_order');
+            update_option('woocommerce_placeholder_image', 0);
+            update_option('woocommerce_enable_reviews', 'no');
+            update_option('woocommerce_enable_review_rating', 'no');
+            update_option('woocommerce_enable_ajax_add_to_cart', 'no');
+
+            // Set store notice
+            update_option('woocommerce_demo_store', 'yes');
+            update_option('woocommerce_demo_store_notice', 'Coming Soon! Our store is currently under construction.');
+        }
+    }
+
+    public function activate_wordpress_search_engine_visibility()
+    {
+        update_option('blog_public', 0);
     }
 }
 
