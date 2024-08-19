@@ -3,8 +3,8 @@
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
  * Description: Adds a message to the admin panel indicating this is a staging environment, manages specific plugins, activates WooCommerce "Coming Soon" mode, and enables WordPress search engine visibility option.
- * Version: 0.0.4
- * Author: Gabriel Kanev (modified by AI assistant)
+ * Version: 0.0.5
+ * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
  * License: MIT
  * Requires at least: 6.0
@@ -28,7 +28,7 @@ class StageGuard
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
-        add_action('init', [$this, 'activate_woocommerce_coming_soon']);
+        add_action('init', [$this, 'activate_woocommerce_coming_soon_mode']);
         add_action('init', [$this, 'activate_wordpress_search_engine_visibility']);
     }
 
@@ -103,20 +103,14 @@ class StageGuard
         }
     }
 
-    public function activate_woocommerce_coming_soon()
+    public function activate_woocommerce_coming_soon_mode()
     {
         if (class_exists('WooCommerce')) {
-            update_option('woocommerce_shop_page_display', '');
-            update_option('woocommerce_category_archive_display', '');
-            update_option('woocommerce_default_catalog_orderby', 'menu_order');
-            update_option('woocommerce_placeholder_image', 0);
-            update_option('woocommerce_enable_reviews', 'no');
-            update_option('woocommerce_enable_review_rating', 'no');
-            update_option('woocommerce_enable_ajax_add_to_cart', 'no');
-
-            // Set store notice
-            update_option('woocommerce_demo_store', 'yes');
-            update_option('woocommerce_demo_store_notice', 'Coming Soon! Our store is currently under construction.');
+            // Check if the WooCommerce version is 9.1 or higher
+            if (version_compare(WC()->version, '9.1', '>=')) {
+                // Activate WooCommerce Coming Soon Mode
+                update_option('woocommerce_coming_soon', 'yes');
+            }
         }
     }
 
