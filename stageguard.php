@@ -2,8 +2,8 @@
 /*
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
- * Description: Adds a message to the admin panel indicating this is a staging environment and manages specific plugins.
- * Version: 0.0.3
+ * Description: Adds a message to the admin panel indicating this is a staging environment, manages specific plugins, activates WooCommerce "Coming Soon" mode, and enables WordPress search engine visibility option.
+ * Version: 0.0.5
  * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
  * License: MIT
@@ -28,6 +28,8 @@ class StageGuard
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
+        add_action('init', [$this, 'activate_woocommerce_coming_soon_mode']);
+        add_action('init', [$this, 'activate_wordpress_search_engine_visibility']);
     }
 
     public static function get_instance()
@@ -99,6 +101,22 @@ class StageGuard
             wp_safe_redirect(add_query_arg('stageguard_activation_error', 'true', admin_url('plugins.php')));
             exit;
         }
+    }
+
+    public function activate_woocommerce_coming_soon_mode()
+    {
+        if (class_exists('WooCommerce')) {
+            // Check if the WooCommerce version is 9.1 or higher
+            if (version_compare(WC()->version, '9.1', '>=')) {
+                // Activate WooCommerce Coming Soon Mode
+                update_option('woocommerce_coming_soon', 'yes');
+            }
+        }
+    }
+
+    public function activate_wordpress_search_engine_visibility()
+    {
+        update_option('blog_public', 0);
     }
 }
 
