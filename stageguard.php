@@ -169,7 +169,7 @@ class StageGuard
             $this->update_wp_config('WP_DEBUG', $debug_mode);
         }
 
-        $current_debug_mode = get_option('stageguard_debug_mode', false);
+        $current_debug_mode = get_option('stageguard_debug_mode', true);
 
 ?>
         <div class="wrap">
@@ -208,11 +208,18 @@ class StageGuard
 
         $config_content = file_get_contents($wp_config_file);
         $value_to_put = $value ? 'true' : 'false';
-        $config_content = preg_replace(
-            "/define\s*\(\s*(['\"])$constant\\1\s*,\s*(.+?)\s*\);/",
-            "define('$constant', $value_to_put);",
-            $config_content
-        );
+
+        if (preg_match("/define\s*\(\s*(['\"])$constant\\1\s*,\s*(.+?)\s*\);/", $config_content)) {
+            // If the constant is already defined, update it
+            $config_content = preg_replace(
+                "/define\s*\(\s*(['\"])$constant\\1\s*,\s*(.+?)\s*\);/",
+                "define('$constant', $value_to_put);",
+                $config_content
+            );
+        } else {
+            // If the constant is not defined, add it
+            $config_content .= PHP_EOL . "define('$constant', $value_to_put);";
+        }
 
         if (file_put_contents($wp_config_file, $config_content) === false) {
             add_settings_error('stageguard', 'file_not_updated', __('Failed to update wp-config.php. Please check file permissions.', 'stageguard'));
@@ -235,7 +242,8 @@ class StageGuard
 
     public function activate()
     {
-        add_option('stageguard_debug_mode', false);
+        add_option('stageguard_debug_mode', true);
+        $this->update_wp_config('WP_DEBUG', true);
     }
 
     public function deactivate()
