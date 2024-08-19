@@ -5,7 +5,7 @@
  * Description: Manages staging environment, including Coming Soon mode, search engine visibility, staging indicator, debug mode toggle, and robots.txt modification.
  * Version: 0.1.0
  * Author: Gabriel Kanev
- * Author URL: https://gkanev.com
+ * Author URI: https://gkanev.com
  * License: MIT
  * Requires at least: 6.0
  * Requires PHP: 7.4
