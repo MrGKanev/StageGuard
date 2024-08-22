@@ -6,11 +6,10 @@
  * Version: 0.1.0
  * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
- * License: MIT
+ * License: GPL-2.0 License
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Text Domain: stageguard
- * Domain Path: /languages
  */
 
 if (!defined('ABSPATH')) {
