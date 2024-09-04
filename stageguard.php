@@ -40,11 +40,11 @@ class StageGuard
         add_filter('robots_txt', [$this, 'custom_robots_txt'], 10, 2);
         add_action('wp_login', [$this, 'log_user_login'], 10, 2);
 
-        // New actions for additional security measures
+        // Security measures
         add_action('init', [$this, 'password_protect_staging']);
         add_action('init', [$this, 'ip_restrict_staging']);
 
-        // New action for email handling
+        // Email handling
         add_filter('wp_mail', [$this, 'catch_staging_emails']);
 
         register_activation_hook(__FILE__, [$this, 'activate']);
@@ -154,7 +154,52 @@ class StageGuard
 
     public function add_staging_indicator()
     {
-        echo '<div style="position: fixed; top: 0; left: 0; right: 0; background: #ff6b6b; color: white; text-align: center; padding: 5px; z-index: 9999;">' . esc_html__('STAGING ENVIRONMENT', 'stageguard') . '</div>';
+?>
+        <style>
+            body {
+                margin-top: 35px !important;
+                /* Adjust this value based on the height of your banner */
+            }
+
+            #stageguard-indicator {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: #ff0000;
+                /* Red background */
+                color: white;
+                text-align: center;
+                padding: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                z-index: 999999;
+                /* Ensure it's above other elements */
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                /* Optional: adds a subtle shadow */
+            }
+
+            /* Adjust the WordPress admin bar */
+            body.admin-bar #stageguard-indicator {
+                top: 32px;
+                /* For most screen sizes */
+            }
+
+            @media screen and (max-width: 782px) {
+                body.admin-bar #stageguard-indicator {
+                    top: 46px;
+                    /* For smaller screens */
+                }
+
+                body {
+                    margin-top: 46px !important;
+                }
+            }
+        </style>
+        <div id="stageguard-indicator">
+            <?php esc_html_e('STAGING ENVIRONMENT', 'stageguard'); ?>
+        </div>
+    <?php
     }
 
     public function add_stageguard_menu()
@@ -177,15 +222,11 @@ class StageGuard
         if (isset($_POST['stageguard_settings']) && check_admin_referer('stageguard_settings')) {
             $debug_mode = isset($_POST['debug_mode']);
             $password_protection = isset($_POST['password_protection']);
-            $staging_password = sanitize_text_field($_POST['staging_password']);
             $ip_restriction = isset($_POST['ip_restriction']);
             $allowed_ips = sanitize_textarea_field($_POST['allowed_ips']);
 
             update_option('stageguard_debug_mode', $debug_mode);
             update_option('stageguard_password_protection', $password_protection);
-            if (!empty($staging_password)) {
-                update_option('stageguard_staging_password', wp_hash_password($staging_password));
-            }
             update_option('stageguard_ip_restriction', $ip_restriction);
             update_option('stageguard_allowed_ips', $allowed_ips);
 
@@ -197,8 +238,9 @@ class StageGuard
         $current_password_protection = get_option('stageguard_password_protection', false);
         $current_ip_restriction = get_option('stageguard_ip_restriction', false);
         $current_allowed_ips = get_option('stageguard_allowed_ips', '');
+        $current_user_ip = $_SERVER['REMOTE_ADDR'];
 
-?>
+    ?>
         <div class="wrap">
             <h1><?php esc_html_e('StageGuard Settings', 'stageguard'); ?></h1>
             <form method="post">
@@ -218,15 +260,8 @@ class StageGuard
                         <td>
                             <label for="password_protection">
                                 <input type="checkbox" id="password_protection" name="password_protection" <?php checked($current_password_protection); ?>>
-                                <?php esc_html_e('Enable Password Protection', 'stageguard'); ?>
+                                <?php esc_html_e('Enable Password Protection (Redirects to WordPress login)', 'stageguard'); ?>
                             </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Staging Password', 'stageguard'); ?></th>
-                        <td>
-                            <input type="password" id="staging_password" name="staging_password">
-                            <p class="description"><?php esc_html_e('Enter a new password to update. Leave blank to keep the current password.', 'stageguard'); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -242,14 +277,18 @@ class StageGuard
                         <th scope="row"><?php esc_html_e('Allowed IPs', 'stageguard'); ?></th>
                         <td>
                             <textarea id="allowed_ips" name="allowed_ips" rows="5" cols="50"><?php echo esc_textarea($current_allowed_ips); ?></textarea>
-                            <p class="description"><?php esc_html_e('Enter one IP address per line', 'stageguard'); ?></p>
+                            <p class="description">
+                                <?php esc_html_e('Enter one IP address per line', 'stageguard'); ?>
+                                <br>
+                                <?php esc_html_e('Your current IP address is:', 'stageguard'); ?> <strong><?php echo esc_html($current_user_ip); ?></strong>
+                            </p>
                         </td>
                     </tr>
                 </table>
                 <?php submit_button('Save Settings', 'primary', 'stageguard_settings'); ?>
             </form>
         </div>
-        <?php
+<?php
     }
 
     private function update_wp_config($constant, $value)
@@ -301,66 +340,16 @@ class StageGuard
     {
         if (get_option('stageguard_password_protection', false)) {
             if (!is_user_logged_in() && !defined('DOING_CRON')) {
-                $this->display_password_form();
+                $current_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+                $login_url = wp_login_url();
+
+                // Check if we're not already on the login page to avoid redirect loops
+                if (strpos($current_url, $login_url) === false) {
+                    wp_safe_redirect(add_query_arg('redirect_to', urlencode($current_url), $login_url));
+                    exit;
+                }
             }
         }
-    }
-
-    private function display_password_form()
-    {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['staging_access_password'])) {
-            $submitted_password = $_POST['staging_access_password'];
-            $stored_password_hash = get_option('stageguard_staging_password');
-
-            if (wp_check_password($submitted_password, $stored_password_hash)) {
-                $this->set_auth_cookie();
-                return;
-            }
-        }
-
-        if (!$this->is_auth_cookie_valid()) {
-            header('HTTP/1.1 401 Unauthorized');
-        ?>
-            <!DOCTYPE html>
-            <html>
-
-            <head>
-                <title><?php esc_html_e('Staging Site Access', 'stageguard'); ?></title>
-            </head>
-
-            <body>
-                <h1><?php esc_html_e('Staging Site Access', 'stageguard'); ?></h1>
-                <form method="post">
-                    <label for="staging_access_password"><?php esc_html_e('Password:', 'stageguard'); ?></label>
-                    <input type="password" id="staging_access_password" name="staging_access_password" required>
-                    <input type="submit" value="<?php esc_attr_e('Access Staging Site', 'stageguard'); ?>">
-                </form>
-            </body>
-
-            </html>
-<?php
-            exit;
-        }
-    }
-
-    private function set_auth_cookie()
-    {
-        $expiration = time() + DAY_IN_SECONDS;
-        $cookie_value = wp_hash('stageguard_auth_' . get_current_blog_id() . $expiration);
-        setcookie('stageguard_auth', $cookie_value, $expiration, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
-    }
-
-    private function is_auth_cookie_valid()
-    {
-        if (!isset($_COOKIE['stageguard_auth'])) {
-            return false;
-        }
-
-        $cookie_value = $_COOKIE['stageguard_auth'];
-        $expiration = time() + DAY_IN_SECONDS;
-        $expected_value = wp_hash('stageguard_auth_' . get_current_blog_id() . $expiration);
-
-        return hash_equals($expected_value, $cookie_value);
     }
 
     public function ip_restrict_staging()
