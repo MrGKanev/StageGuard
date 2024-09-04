@@ -3,7 +3,7 @@
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
  * Description: Manages staging environment, including Coming Soon mode, search engine visibility, staging indicator, debug mode toggle, and robots.txt modification.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
  * License: GPL-2.0 License
@@ -20,10 +20,12 @@ class StageGuard
 {
     private static $instance = null;
     private $plugins_to_handle;
+    private $log_file;
 
     private function __construct()
     {
         $this->load_plugins_to_handle();
+        $this->log_file = WP_CONTENT_DIR . '/stageguard-log.txt';
 
         add_action('plugins_loaded', [$this, 'load_textdomain']);
         add_action('admin_notices', [$this, 'staging_env_notice']);
@@ -36,6 +38,14 @@ class StageGuard
         add_action('admin_menu', [$this, 'add_stageguard_menu']);
         add_action('generate_rewrite_rules', [$this, 'modify_robots_txt']);
         add_filter('robots_txt', [$this, 'custom_robots_txt'], 10, 2);
+        add_action('wp_login', [$this, 'log_user_login'], 10, 2);
+
+        // New actions for additional security measures
+        add_action('init', [$this, 'password_protect_staging']);
+        add_action('init', [$this, 'ip_restrict_staging']);
+
+        // New action for email handling
+        add_filter('wp_mail', [$this, 'catch_staging_emails']);
 
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
@@ -100,6 +110,7 @@ class StageGuard
         foreach ($this->plugins_to_handle as $plugin) {
             if (is_plugin_active($plugin)) {
                 deactivate_plugins($plugin);
+                $this->log_action(sprintf('Deactivated plugin: %s', $plugin));
             }
         }
     }
@@ -119,6 +130,7 @@ class StageGuard
 
         if (in_array($plugin, $this->plugins_to_handle)) {
             deactivate_plugins($plugin);
+            $this->log_action(sprintf('Prevented activation of plugin: %s', $plugin));
             wp_safe_redirect(add_query_arg('stageguard_activation_error', 'true', admin_url('plugins.php')));
             exit;
         }
@@ -127,10 +139,9 @@ class StageGuard
     public function activate_woocommerce_coming_soon_mode()
     {
         if (class_exists('WooCommerce')) {
-            // Check if the WooCommerce version is 9.1 or higher
             if (version_compare(WC()->version, '9.1', '>=')) {
-                // Activate WooCommerce Coming Soon Mode
                 update_option('woocommerce_coming_soon', 'yes');
+                $this->log_action('Activated WooCommerce Coming Soon mode');
             }
         }
     }
@@ -138,6 +149,7 @@ class StageGuard
     public function activate_wordpress_search_engine_visibility()
     {
         update_option('blog_public', 0);
+        $this->log_action('Activated WordPress Search Engine Visibility');
     }
 
     public function add_staging_indicator()
@@ -162,13 +174,29 @@ class StageGuard
             wp_die(__('You do not have sufficient permissions to access this page.', 'stageguard'));
         }
 
-        if (isset($_POST['debug_mode']) && check_admin_referer('stageguard_settings')) {
-            $debug_mode = sanitize_text_field($_POST['debug_mode']) === 'on';
+        if (isset($_POST['stageguard_settings']) && check_admin_referer('stageguard_settings')) {
+            $debug_mode = isset($_POST['debug_mode']);
+            $password_protection = isset($_POST['password_protection']);
+            $staging_password = sanitize_text_field($_POST['staging_password']);
+            $ip_restriction = isset($_POST['ip_restriction']);
+            $allowed_ips = sanitize_textarea_field($_POST['allowed_ips']);
+
             update_option('stageguard_debug_mode', $debug_mode);
+            update_option('stageguard_password_protection', $password_protection);
+            if (!empty($staging_password)) {
+                update_option('stageguard_staging_password', wp_hash_password($staging_password));
+            }
+            update_option('stageguard_ip_restriction', $ip_restriction);
+            update_option('stageguard_allowed_ips', $allowed_ips);
+
             $this->update_wp_config('WP_DEBUG', $debug_mode);
+            $this->log_action('Settings updated');
         }
 
         $current_debug_mode = get_option('stageguard_debug_mode', true);
+        $current_password_protection = get_option('stageguard_password_protection', false);
+        $current_ip_restriction = get_option('stageguard_ip_restriction', false);
+        $current_allowed_ips = get_option('stageguard_allowed_ips', '');
 
 ?>
         <div class="wrap">
@@ -185,11 +213,43 @@ class StageGuard
                             </label>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Password Protection', 'stageguard'); ?></th>
+                        <td>
+                            <label for="password_protection">
+                                <input type="checkbox" id="password_protection" name="password_protection" <?php checked($current_password_protection); ?>>
+                                <?php esc_html_e('Enable Password Protection', 'stageguard'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Staging Password', 'stageguard'); ?></th>
+                        <td>
+                            <input type="password" id="staging_password" name="staging_password">
+                            <p class="description"><?php esc_html_e('Enter a new password to update. Leave blank to keep the current password.', 'stageguard'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('IP Restriction', 'stageguard'); ?></th>
+                        <td>
+                            <label for="ip_restriction">
+                                <input type="checkbox" id="ip_restriction" name="ip_restriction" <?php checked($current_ip_restriction); ?>>
+                                <?php esc_html_e('Enable IP Restriction', 'stageguard'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Allowed IPs', 'stageguard'); ?></th>
+                        <td>
+                            <textarea id="allowed_ips" name="allowed_ips" rows="5" cols="50"><?php echo esc_textarea($current_allowed_ips); ?></textarea>
+                            <p class="description"><?php esc_html_e('Enter one IP address per line', 'stageguard'); ?></p>
+                        </td>
+                    </tr>
                 </table>
-                <?php submit_button(); ?>
+                <?php submit_button('Save Settings', 'primary', 'stageguard_settings'); ?>
             </form>
         </div>
-<?php
+        <?php
     }
 
     private function update_wp_config($constant, $value)
@@ -209,14 +269,12 @@ class StageGuard
         $value_to_put = $value ? 'true' : 'false';
 
         if (preg_match("/define\s*\(\s*(['\"])$constant\\1\s*,\s*(.+?)\s*\);/", $config_content)) {
-            // If the constant is already defined, update it
             $config_content = preg_replace(
                 "/define\s*\(\s*(['\"])$constant\\1\s*,\s*(.+?)\s*\);/",
                 "define('$constant', $value_to_put);",
                 $config_content
             );
         } else {
-            // If the constant is not defined, add it
             $config_content .= PHP_EOL . "define('$constant', $value_to_put);";
         }
 
@@ -239,15 +297,124 @@ class StageGuard
         return "User-agent: *\nDisallow: /\n";
     }
 
+    public function password_protect_staging()
+    {
+        if (get_option('stageguard_password_protection', false)) {
+            if (!is_user_logged_in() && !defined('DOING_CRON')) {
+                $this->display_password_form();
+            }
+        }
+    }
+
+    private function display_password_form()
+    {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['staging_access_password'])) {
+            $submitted_password = $_POST['staging_access_password'];
+            $stored_password_hash = get_option('stageguard_staging_password');
+
+            if (wp_check_password($submitted_password, $stored_password_hash)) {
+                $this->set_auth_cookie();
+                return;
+            }
+        }
+
+        if (!$this->is_auth_cookie_valid()) {
+            header('HTTP/1.1 401 Unauthorized');
+        ?>
+            <!DOCTYPE html>
+            <html>
+
+            <head>
+                <title><?php esc_html_e('Staging Site Access', 'stageguard'); ?></title>
+            </head>
+
+            <body>
+                <h1><?php esc_html_e('Staging Site Access', 'stageguard'); ?></h1>
+                <form method="post">
+                    <label for="staging_access_password"><?php esc_html_e('Password:', 'stageguard'); ?></label>
+                    <input type="password" id="staging_access_password" name="staging_access_password" required>
+                    <input type="submit" value="<?php esc_attr_e('Access Staging Site', 'stageguard'); ?>">
+                </form>
+            </body>
+
+            </html>
+<?php
+            exit;
+        }
+    }
+
+    private function set_auth_cookie()
+    {
+        $expiration = time() + DAY_IN_SECONDS;
+        $cookie_value = wp_hash('stageguard_auth_' . get_current_blog_id() . $expiration);
+        setcookie('stageguard_auth', $cookie_value, $expiration, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+    }
+
+    private function is_auth_cookie_valid()
+    {
+        if (!isset($_COOKIE['stageguard_auth'])) {
+            return false;
+        }
+
+        $cookie_value = $_COOKIE['stageguard_auth'];
+        $expiration = time() + DAY_IN_SECONDS;
+        $expected_value = wp_hash('stageguard_auth_' . get_current_blog_id() . $expiration);
+
+        return hash_equals($expected_value, $cookie_value);
+    }
+
+    public function ip_restrict_staging()
+    {
+        if (get_option('stageguard_ip_restriction', false)) {
+            $allowed_ips = explode("\n", get_option('stageguard_allowed_ips', ''));
+            $allowed_ips = array_map('trim', $allowed_ips);
+            $current_ip = $_SERVER['REMOTE_ADDR'];
+
+            if (!in_array($current_ip, $allowed_ips) && !is_user_logged_in()) {
+                wp_die(__('Access denied. Your IP is not allowed to view this staging site.', 'stageguard'));
+            }
+        }
+    }
+
+    public function log_action($message)
+    {
+        $timestamp = current_time('mysql');
+        $log_message = sprintf("[%s] %s\n", $timestamp, $message);
+        file_put_contents($this->log_file, $log_message, FILE_APPEND);
+    }
+
+    public function log_user_login($user_login, $user)
+    {
+        $this->log_action(sprintf('User logged in: %s (ID: %d)', $user_login, $user->ID));
+    }
+
+    public function catch_staging_emails($args)
+    {
+        $this->log_action(sprintf('Email caught: To: %s, Subject: %s', $args['to'], $args['subject']));
+
+        // Prevent the email from being sent
+        $args['to'] = 'no-reply@example.com';
+
+        return $args;
+    }
+
     public function activate()
     {
         add_option('stageguard_debug_mode', true);
+        add_option('stageguard_password_protection', false);
+        add_option('stageguard_ip_restriction', false);
+        add_option('stageguard_allowed_ips', '');
         $this->update_wp_config('WP_DEBUG', true);
+        $this->log_action('StageGuard activated');
     }
 
     public function deactivate()
     {
         delete_option('stageguard_debug_mode');
+        delete_option('stageguard_password_protection');
+        delete_option('stageguard_ip_restriction');
+        delete_option('stageguard_allowed_ips');
+        $this->log_action('StageGuard deactivated');
     }
 }
 
@@ -290,5 +457,37 @@ class StageGuardCLI
         StageGuard::get_instance()->update_wp_config('WP_DEBUG', $value);
 
         WP_CLI::success('Debug mode has been turned ' . ($value ? 'on' : 'off') . '.');
+    }
+
+    /**
+     * Displays the StageGuard log.
+     *
+     * ## OPTIONS
+     *
+     * [--lines=<number>]
+     * : Number of lines to display from the end of the log. Default is 50.
+     *
+     * ## EXAMPLES
+     *
+     *     wp stageguard show_log
+     *     wp stageguard show_log --lines=100
+     *
+     * @when after_wp_load
+     */
+    public function show_log($args, $assoc_args)
+    {
+        $lines = isset($assoc_args['lines']) ? intval($assoc_args['lines']) : 50;
+        $log_file = WP_CONTENT_DIR . '/stageguard-log.txt';
+
+        if (!file_exists($log_file)) {
+            WP_CLI::error('Log file does not exist.');
+        }
+
+        $log_content = file($log_file);
+        $log_content = array_slice($log_content, -$lines);
+
+        foreach ($log_content as $line) {
+            WP_CLI::line(trim($line));
+        }
     }
 }
