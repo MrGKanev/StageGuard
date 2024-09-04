@@ -3,7 +3,7 @@
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
  * Description: Manages staging environment, including Coming Soon mode, search engine visibility, staging indicator, debug mode toggle, and robots.txt modification.
- * Version: 0.2.0
+ * Version: 0.2.1
  * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
  * License: GPL-2.0 License
@@ -32,8 +32,7 @@ class StageGuard
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
-        add_action('init', [$this, 'activate_woocommerce_coming_soon_mode']);
-        add_action('init', [$this, 'activate_wordpress_search_engine_visibility']);
+        add_action('admin_init', [$this, 'maybe_activate_staging_settings']);
         add_action('wp_head', [$this, 'add_staging_indicator']);
         add_action('admin_menu', [$this, 'add_stageguard_menu']);
         add_action('generate_rewrite_rules', [$this, 'modify_robots_txt']);
@@ -136,6 +135,22 @@ class StageGuard
         }
     }
 
+    public function maybe_activate_staging_settings()
+    {
+        $woocommerce_activated = get_option('stageguard_woocommerce_activated', false);
+        $search_engine_visibility_activated = get_option('stageguard_search_engine_visibility_activated', false);
+
+        if (!$woocommerce_activated) {
+            $this->activate_woocommerce_coming_soon_mode();
+            update_option('stageguard_woocommerce_activated', true);
+        }
+
+        if (!$search_engine_visibility_activated) {
+            $this->activate_wordpress_search_engine_visibility();
+            update_option('stageguard_search_engine_visibility_activated', true);
+        }
+    }
+
     public function activate_woocommerce_coming_soon_mode()
     {
         if (class_exists('WooCommerce')) {
@@ -154,43 +169,32 @@ class StageGuard
 
     public function add_staging_indicator()
     {
-?>
+        ?>
         <style>
             body {
                 margin-top: 35px !important;
-                /* Adjust this value based on the height of your banner */
             }
-
             #stageguard-indicator {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 background: #ff0000;
-                /* Red background */
                 color: white;
                 text-align: center;
                 padding: 10px;
                 font-size: 16px;
                 font-weight: bold;
                 z-index: 999999;
-                /* Ensure it's above other elements */
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-                /* Optional: adds a subtle shadow */
             }
-
-            /* Adjust the WordPress admin bar */
             body.admin-bar #stageguard-indicator {
                 top: 32px;
-                /* For most screen sizes */
             }
-
             @media screen and (max-width: 782px) {
                 body.admin-bar #stageguard-indicator {
                     top: 46px;
-                    /* For smaller screens */
                 }
-
                 body {
                     margin-top: 46px !important;
                 }
@@ -199,7 +203,7 @@ class StageGuard
         <div id="stageguard-indicator">
             <?php esc_html_e('STAGING ENVIRONMENT', 'stageguard'); ?>
         </div>
-    <?php
+        <?php
     }
 
     public function add_stageguard_menu()
@@ -240,7 +244,7 @@ class StageGuard
         $current_allowed_ips = get_option('stageguard_allowed_ips', '');
         $current_user_ip = $_SERVER['REMOTE_ADDR'];
 
-    ?>
+        ?>
         <div class="wrap">
             <h1><?php esc_html_e('StageGuard Settings', 'stageguard'); ?></h1>
             <form method="post">
@@ -288,7 +292,7 @@ class StageGuard
                 <?php submit_button('Save Settings', 'primary', 'stageguard_settings'); ?>
             </form>
         </div>
-<?php
+        <?php
     }
 
     private function update_wp_config($constant, $value)
@@ -395,6 +399,10 @@ class StageGuard
         add_option('stageguard_allowed_ips', '');
         $this->update_wp_config('WP_DEBUG', true);
         $this->log_action('StageGuard activated');
+
+        // Reset the activation flags when the plugin is activated
+        delete_option('stageguard_woocommerce_activated');
+        delete_option('stageguard_search_engine_visibility_activated');
     }
 
     public function deactivate()
@@ -404,6 +412,10 @@ class StageGuard
         delete_option('stageguard_ip_restriction');
         delete_option('stageguard_allowed_ips');
         $this->log_action('StageGuard deactivated');
+
+        // Clean up the activation flags when the plugin is deactivated
+        delete_option('stageguard_woocommerce_activated');
+        delete_option('stageguard_search_engine_visibility_activated');
     }
 }
 

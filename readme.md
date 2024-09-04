@@ -2,19 +2,29 @@
 
 ## Description
 
-StageGuard is a WordPress plugin designed to clearly indicate that a website is running in a staging environment and manage various aspects of the staging setup.
+StageGuard is a WordPress plugin designed to clearly indicate and manage a staging environment. It provides various features to protect your staging site, prevent accidental emails, and manage plugin activations.
 
 ## Features
 
-- Displays a prominent message in the admin panel indicating a staging environment.
-- Automatically deactivates specific plugins.
-- Prevents activation of certain plugins and provides a custom error message.
-- Activates WooCommerce Coming Soon mode (for WooCommerce 9.1 or higher).
-- Disables search engine visibility for WordPress.
-- Adds a visual indicator on the frontend for staging environments.
-- Provides a settings page to toggle Debug Mode.
-- Modifies robots.txt to disallow all crawling.
-- Offers WP-CLI support for managing debug mode.
+1. **Staging Environment Indicator**: Displays a prominent red message at the top of all pages indicating that the site is a staging environment.
+
+2. **Password Protection**: Redirects non-logged-in users to the WordPress login page, ensuring that only authenticated users can access the staging site.
+
+3. **IP Restriction**: Allows access only from specified IP addresses.
+
+4. **Plugin Management**: Automatically deactivates specific plugins in the staging environment.
+
+5. **Search Engine Visibility**: Automatically sets the site to discourage search engines from indexing it.
+
+6. **WooCommerce Coming Soon Mode**: Activates WooCommerce Coming Soon mode if WooCommerce is installed.
+
+7. **Email Catching**: Prevents emails from being sent out from the staging environment.
+
+8. **Debug Mode Toggle**: Easily enable or disable WordPress debug mode.
+
+9. **Robots.txt Modification**: Modifies the robots.txt file to disallow all crawlers.
+
+10. **Logging System**: Keeps a log of important actions for debugging and monitoring.
 
 ## Deactivated Plugins
 
@@ -50,32 +60,44 @@ StageGuard will deactivate the following plugins:
 
 1. Upload the `stageguard` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Confirm the activation when prompted.
+3. Go to Settings > StageGuard to configure the plugin.
 
-## Usage
+## Configuration
 
-### Admin Settings
+1. **Debug Mode**: Toggle WordPress debug mode on or off.
+2. **Password Protection**: Enable to redirect non-logged-in users to the WordPress login page.
+3. **IP Restriction**: Enable and specify allowed IP addresses to restrict access to the staging site.
+4. **Allowed IPs**: Enter the IP addresses that should have access to the staging site (one per line).
 
-Navigate to Settings > StageGuard in the WordPress admin panel to access the StageGuard settings page. Here you can toggle Debug Mode on or off.
+## Viewing Logs
 
-### WP-CLI Commands
+You can view the StageGuard logs in two ways:
 
-StageGuard supports the following WP-CLI command:
+1. **Admin Interface**: Go to Settings > StageGuard Logs in the WordPress admin area.
+2. **WP-CLI**: Use the command `wp stageguard show_log` to view logs in the terminal.
 
-```
-wp stageguard debug_mode <on|off>
-```
+## WP-CLI Commands
 
-This command allows you to toggle debug mode on or off from the command line.
+StageGuard supports the following WP-CLI commands:
 
-## Requirements
+- `wp stageguard debug_mode <on|off>`: Toggle debug mode on or off.
+- `wp stageguard show_log [--lines=<number>]`: Display the StageGuard log. Use the `--lines` option to specify the number of lines to show (default is 50).
 
-- WordPress 6.0 or higher
-- PHP 7.4 or higher
+## Troubleshooting
+
+If you're having issues with StageGuard, check the following:
+
+1. Ensure that the web server has write permissions to the `wp-content` directory for logging.
+2. If you're not seeing the staging indicator, check if your theme is properly loading the `wp_head` action.
+3. If password protection isn't working, make sure you're not already logged in to WordPress.
 
 ## License
 
-This plugin is licensed under the MIT License.
+This plugin is licensed under the GPL-2.0 License.
+
+## Support
+
+For support, please open an issue on the [GitHub repository](https://github.com/MrGKanev/StageGuard/).
 
 ## Author
 
