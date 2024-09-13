@@ -2,8 +2,8 @@
 /*
  * Plugin Name: StageGuard
  * Plugin URI: https://github.com/MrGKanev/StageGuard/
- * Description: Manages staging environment, including Coming Soon mode, search engine visibility, debug mode toggle, and robots.txt modification.
- * Version: 0.2.2
+ * Description: Manages staging environment, including Coming Soon mode, search engine visibility, staging indicator, debug mode toggle, and robots.txt modification.
+ * Version: 0.2.3
  * Author: Gabriel Kanev
  * Author URI: https://gkanev.com
  * License: GPL-2.0 License
@@ -28,10 +28,12 @@ class StageGuard
         $this->log_file = WP_CONTENT_DIR . '/stageguard-log.txt';
 
         add_action('plugins_loaded', [$this, 'load_textdomain']);
+        add_action('admin_notices', [$this, 'staging_env_notice']);
         add_action('admin_init', [$this, 'deactivate_staging_plugins']);
         add_action('admin_notices', [$this, 'stageguard_activation_notice']);
         add_action('activate_plugin', [$this, 'prevent_plugin_activation'], 10, 1);
         add_action('admin_init', [$this, 'maybe_activate_staging_settings']);
+        add_action('wp_head', [$this, 'add_staging_indicator']);
         add_action('admin_menu', [$this, 'add_stageguard_menu']);
         add_action('generate_rewrite_rules', [$this, 'modify_robots_txt']);
         add_filter('robots_txt', [$this, 'custom_robots_txt'], 10, 2);
@@ -93,6 +95,13 @@ class StageGuard
             'mailchimp-for-woocommerce/mailchimp-woocommerce.php', // Mailchimp for WooCommerce
         ];
         $this->plugins_to_handle = array_map('trim', $this->plugins_to_handle);
+    }
+
+    public function staging_env_notice()
+    {
+        if (!class_exists('WooCommerce')) {
+            echo '<div class="notice notice-warning"><p>' . esc_html__('This website is a staging environment.', 'stageguard') . '</p></div>';
+        }
     }
 
     public function deactivate_staging_plugins()
@@ -160,6 +169,47 @@ class StageGuard
     {
         update_option('blog_public', 0);
         $this->log_action('Activated WordPress Search Engine Visibility');
+    }
+
+    public function add_staging_indicator()
+    {
+        if (!class_exists('WooCommerce')) {
+            ?>
+            <style>
+                body {
+                    margin-top: 35px !important;
+                }
+                #stageguard-indicator {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background: #ff0000;
+                    color: white;
+                    text-align: center;
+                    padding: 10px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    z-index: 999999;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                }
+                body.admin-bar #stageguard-indicator {
+                    top: 32px;
+                }
+                @media screen and (max-width: 782px) {
+                    body.admin-bar #stageguard-indicator {
+                        top: 46px;
+                    }
+                    body {
+                        margin-top: 46px !important;
+                    }
+                }
+            </style>
+            <div id="stageguard-indicator">
+                <?php esc_html_e('STAGING ENVIRONMENT', 'stageguard'); ?>
+            </div>
+            <?php
+        }
     }
 
     public function add_stageguard_menu()
