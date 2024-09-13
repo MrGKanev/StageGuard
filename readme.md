@@ -6,25 +6,16 @@ StageGuard is a WordPress plugin designed to clearly indicate and manage a stagi
 
 ## Features
 
-1. **Staging Environment Indicator**: Displays a prominent red message at the top of all pages indicating that the site is a staging environment.
-
-2. **Password Protection**: Redirects non-logged-in users to the WordPress login page, ensuring that only authenticated users can access the staging site.
-
-3. **IP Restriction**: Allows access only from specified IP addresses.
-
-4. **Plugin Management**: Automatically deactivates specific plugins in the staging environment.
-
-5. **Search Engine Visibility**: Automatically sets the site to discourage search engines from indexing it.
-
-6. **WooCommerce Coming Soon Mode**: Activates WooCommerce Coming Soon mode if WooCommerce is installed.
-
-7. **Email Catching**: Prevents emails from being sent out from the staging environment.
-
-8. **Debug Mode Toggle**: Easily enable or disable WordPress debug mode.
-
-9. **Robots.txt Modification**: Modifies the robots.txt file to disallow all crawlers.
-
-10. **Logging System**: Keeps a log of important actions for debugging and monitoring.
+- Displays a prominent message in the admin panel and on the frontend indicating a staging environment - only if WooCommerce is not installed 
+- Automatically deactivates specific plugins.
+- Prevents activation of certain plugins and provides a custom error message.
+- Activates Coming Soon mode for WooCommerce (if installed).
+- Modifies search engine visibility settings.
+- Provides password protection for the staging site.
+- Offers IP restriction capabilities.
+- Modifies robots.txt to discourage search engine indexing.
+- Catches and logs emails sent from the staging environment.
+- Includes WP-CLI commands for managing the plugin.
 
 ## Deactivated Plugins
 
